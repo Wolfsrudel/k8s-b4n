@@ -438,10 +438,10 @@ impl App {
 
     /// Runs command to list kube contexts from the current config.
     fn list_kube_contexts(&mut self) {
-        let kube_config_path = self.data.borrow().history.kube_config_path().map(String::from);
+        let kubeconfig_path = self.data.borrow().history.kubeconfig_path().map(String::from);
         self.worker
             .borrow_mut()
-            .run_command(Command::ListKubeContexts(ListKubeContextsCommand { kube_config_path }));
+            .run_command(Command::ListKubeContexts(ListKubeContextsCommand { kubeconfig_path }));
     }
 
     /// Runs command to list themes from the themes directory.

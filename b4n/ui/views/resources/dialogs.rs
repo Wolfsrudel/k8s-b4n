@@ -151,7 +151,7 @@ pub fn build_plugin_context(
 
     let app_data = app_data.borrow();
     PluginContext {
-        kubeconfig: app_data.history.kube_config_path().map(String::from).unwrap_or_default(),
+        kubeconfig: app_data.history.kubeconfig_path().map(String::from).unwrap_or_default(),
         context: app_data.current.context.clone(),
         kind: app_data.current.resource.kind.clone(),
         namespace: app_data.current.namespace.clone(),

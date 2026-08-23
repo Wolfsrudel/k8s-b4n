@@ -44,14 +44,14 @@ fn run_application(args: &cli::Args) -> Result<()> {
     let rt = Builder::new_multi_thread().enable_all().build()?;
 
     let mut history = rt.block_on(History::load_or_create())?;
-    let (context, kube_config_path) = rt.block_on(validate_and_resolve_context(
+    let (context, kubeconfig_path) = rt.block_on(validate_and_resolve_context(
         args.kube_config.as_deref(),
         args.context(history.current_context()),
         args.cluster.as_deref(),
         args.user.as_deref(),
         args.context.is_none(),
     ))?;
-    history.set_kube_config_path(kube_config_path);
+    history.set_kubeconfig_path(kubeconfig_path);
 
     let kind = args.kind(history.get_kind(&context.name)).unwrap_or(PODS).into();
     let namespace = history.get_namespace(&context.name).or(context.namespace.as_deref());

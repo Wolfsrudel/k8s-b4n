@@ -153,9 +153,9 @@ impl KubernetesClientManager {
         kind: Kind,
         namespace: Namespace,
     ) -> RequestInfo {
-        let kube_config_path = self.app_data.borrow().history.kube_config_path().map(String::from);
+        let kubeconfig_path = self.app_data.borrow().history.kubeconfig_path().map(String::from);
         let cmd = NewKubernetesClientCommand::new(
-            kube_config_path,
+            kubeconfig_path,
             context.clone(),
             options.clone(),
             kind.clone(),

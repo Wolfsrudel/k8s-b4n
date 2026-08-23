@@ -44,7 +44,7 @@ impl ContextInfo {
     }
 }
 
-/// Keeps context configuration for individual kube config.
+/// Keeps context configuration for individual kubeconfig.
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct KubeConfig {
     pub current_context: Option<String>,
@@ -69,9 +69,9 @@ static EMPTY_LIST: Vec<HistoryItem> = Vec::new();
 /// Application history.
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct History {
-    pub kube_configs: HashMap<String, KubeConfig>,
+    pub kubeconfigs: HashMap<String, KubeConfig>,
     #[serde(skip_serializing)]
-    current_kube_config: Option<String>,
+    current_kubeconfig: Option<String>,
     #[serde(skip_serializing)]
     current_hash: Option<String>,
 }
@@ -99,7 +99,7 @@ impl History {
     /// Returns a kind stored in the history under a specific context name.
     pub fn get_kind(&self, context: &str) -> Option<&str> {
         if let Some(index) = self.context_index(context) {
-            Some(&self.kube_configs[self.config_key()].contexts[index].kind)
+            Some(&self.kubeconfigs[self.config_key()].contexts[index].kind)
         } else {
             None
         }
@@ -108,25 +108,25 @@ impl History {
     /// Returns a namespace stored in the history under a specific context name.
     pub fn get_namespace(&self, context: &str) -> Option<&str> {
         if let Some(index) = self.context_index(context) {
-            Some(&self.kube_configs[self.config_key()].contexts[index].namespace)
+            Some(&self.kubeconfigs[self.config_key()].contexts[index].namespace)
         } else {
             None
         }
     }
 
-    /// Gets the currently used kube config path.
-    pub fn kube_config_path(&self) -> Option<&str> {
-        self.current_kube_config.as_deref()
+    /// Gets the currently used kubeconfig path.
+    pub fn kubeconfig_path(&self) -> Option<&str> {
+        self.current_kubeconfig.as_deref()
     }
 
-    /// Sets the currently used kube config path.
-    pub fn set_kube_config_path(&mut self, path: Option<String>) {
+    /// Sets the currently used kubeconfig path.
+    pub fn set_kubeconfig_path(&mut self, path: Option<String>) {
         if let Some(path) = path {
             self.current_hash = Some(calculate_hash(&path, 8));
-            self.current_kube_config = Some(path);
+            self.current_kubeconfig = Some(path);
         } else {
             self.current_hash = None;
-            self.current_kube_config = None;
+            self.current_kubeconfig = None;
         }
     }
 
@@ -148,52 +148,52 @@ impl History {
 
             config.current_context = Some(context);
         } else {
-            self.kube_configs
+            self.kubeconfigs
                 .insert(self.config_key().to_owned(), KubeConfig::new(context, kind, namespace));
         }
     }
 
-    /// Gets `filter_history` from the specified `context` of the current kube config.
+    /// Gets `filter_history` from the specified `context` of the current kubeconfig.
     pub fn filter_history(&self, context: &str) -> &[HistoryItem] {
         self.get_history(context, |c| &c.filter_history)
     }
 
-    /// Puts item to `filter_history` in the specified `context` of the current kube config.
+    /// Puts item to `filter_history` in the specified `context` of the current kubeconfig.
     pub fn put_filter_history_item(&mut self, context: &str, item: HistoryItem, max_list_size: usize) {
         self.put_history_item_to(context, item, max_list_size, |c| &mut c.filter_history);
     }
 
-    /// Removes an item from `filter_history` in the specified `context` of the current kube config.
+    /// Removes an item from `filter_history` in the specified `context` of the current kubeconfig.
     pub fn remove_filter_history_item(&mut self, context: &str, item: &str) -> Option<HistoryItem> {
         self.remove_history_item_from(context, item, |c| &mut c.filter_history)
     }
 
-    /// Gets `search_history` from the specified `context` of the current kube config.
+    /// Gets `search_history` from the specified `context` of the current kubeconfig.
     pub fn search_history(&self, context: &str) -> &[HistoryItem] {
         self.get_history(context, |c| &c.search_history)
     }
 
-    /// Puts item to `search_history` in the specified `context` of the current kube config.
+    /// Puts item to `search_history` in the specified `context` of the current kubeconfig.
     pub fn put_search_history_item(&mut self, context: &str, item: HistoryItem, max_list_size: usize) {
         self.put_history_item_to(context, item, max_list_size, |c| &mut c.search_history);
     }
 
-    /// Removes an item from `search_history` in the specified `context` of the current kube config.
+    /// Removes an item from `search_history` in the specified `context` of the current kubeconfig.
     pub fn remove_search_history_item(&mut self, context: &str, item: &str) -> Option<HistoryItem> {
         self.remove_history_item_from(context, item, |c| &mut c.search_history)
     }
 
-    /// Gets `namespace_history` from the specified `context` of the current kube config.
+    /// Gets `namespace_history` from the specified `context` of the current kubeconfig.
     pub fn namespace_history(&self, context: &str) -> &[HistoryItem] {
         self.get_history(context, |c| &c.namespace_history)
     }
 
-    /// Puts item to `namespace_history` in the specified `context` of the current kube config.
+    /// Puts item to `namespace_history` in the specified `context` of the current kubeconfig.
     pub fn put_namespace_history_item(&mut self, context: &str, item: HistoryItem, max_list_size: usize) {
         self.put_history_item_to(context, item, max_list_size, |c| &mut c.namespace_history);
     }
 
-    /// Removes an item from `namespace_history` in the specified `context` of the current kube config.
+    /// Removes an item from `namespace_history` in the specified `context` of the current kubeconfig.
     pub fn remove_namespace_history_item(&mut self, context: &str, item: &str) -> Option<HistoryItem> {
         self.remove_history_item_from(context, item, |c| &mut c.namespace_history)
     }
@@ -206,13 +206,13 @@ impl History {
     }
 
     fn context_index(&self, context: &str) -> Option<usize> {
-        self.kube_configs
+        self.kubeconfigs
             .get(self.config_key())
             .and_then(|c| c.contexts.iter().position(|c| c.name == context))
     }
 
     fn current_config(&self) -> Option<&KubeConfig> {
-        self.kube_configs.get(self.config_key())
+        self.kubeconfigs.get(self.config_key())
     }
 
     fn current_config_mut(&mut self) -> Option<&mut KubeConfig> {
@@ -221,7 +221,7 @@ impl History {
             None => "default",
         };
 
-        self.kube_configs.get_mut(current_key)
+        self.kubeconfigs.get_mut(current_key)
     }
 
     fn get_history<'a>(&'a self, context: &str, field: fn(&'a ContextInfo) -> &'a Vec<HistoryItem>) -> &'a [HistoryItem] {
