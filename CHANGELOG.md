@@ -4,12 +4,13 @@
 
 ### Features
 
-- add `--cluster` and `--user` options to overwrite context configuration
-- allow to impersonate as a different user during the session
+- add `--cluster` and `--user` options to override context configuration
+- add `--as` and `--as-group` options to impersonate a user during the session
+- add `--client-cert`, `--client-key`, and `--ca` options for custom TLS authentication
 
-### Bug fixes
+### Bug Fixes
 
-- fix mouse menu not working properly in YAML edit mode
+- fix mouse menu not working in YAML edit mode
 
 ## 0.5.6 - 2026-08-17
 

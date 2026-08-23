@@ -1,4 +1,4 @@
-use b4n_kube::ALL_NAMESPACES;
+use b4n_kube::{ALL_NAMESPACES, client::ClientOptions};
 use clap::Parser;
 
 /// b4n is an interactive TUI for managing Kubernetes clusters.
@@ -41,6 +41,18 @@ pub struct Args {
     #[arg(long, requires = "as_user")]
     pub as_group: Vec<String>,
 
+    /// Path to a client certificate file for TLS authentication.
+    #[arg(long)]
+    pub client_cert: Option<String>,
+
+    /// Path to a client key file for TLS authentication.
+    #[arg(long)]
+    pub client_key: Option<String>,
+
+    /// Path to a cert file with the certificate authority to use.
+    #[arg(long = "ca")]
+    pub certificate_authority: Option<String>,
+
     /// Skip TLS certificate verification (unsafe).
     #[arg(long)]
     pub insecure: bool,
@@ -51,7 +63,9 @@ pub struct Args {
 }
 
 impl Args {
-    /// Returns context or `last_used` if context is `None` and cluster or user is not provided.
+    /// Returns context name or `last_used` if:
+    /// - context is `None`,
+    /// - cluster, user or impersonation is not provided.
     pub fn context<'a>(&'a self, last_used: Option<&'a str>) -> Option<&'a str> {
         self.context.as_deref().or_else(|| {
             let allow_last_used =
@@ -85,6 +99,21 @@ impl Args {
             self.resource.as_deref()
         } else {
             default
+        }
+    }
+}
+
+impl From<&Args> for ClientOptions {
+    fn from(value: &Args) -> Self {
+        Self {
+            cluster: value.cluster.clone(),
+            user: value.user.clone(),
+            as_user: value.as_user.clone(),
+            as_groups: (!value.as_group.is_empty()).then(|| value.as_group.clone()),
+            client_cert: value.client_cert.clone(),
+            client_key: value.client_key.clone(),
+            certificate_authority: value.certificate_authority.clone(),
+            allow_insecure: value.insecure,
         }
     }
 }

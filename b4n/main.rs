@@ -60,7 +60,7 @@ fn run_application(args: &cli::Args) -> Result<()> {
     let (config, config_error) = rt.block_on(Config::load_or_create());
     let (theme, theme_error) = rt.block_on(config.load_theme());
 
-    let mut app = App::new(rt.handle().clone(), config, history, theme, args)?;
+    let mut app = App::new(rt.handle().clone(), config, history, theme, args.into())?;
     app.start(context.name, kind, namespace)?;
 
     if let Some(error) = config_error

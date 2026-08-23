@@ -43,24 +43,23 @@ pub enum ClientError {
     /// Failed to build kubernetes client.
     #[error("cannot create client: {0}")]
     KubeError(#[from] kube::Error),
+
+    /// Cannot join client creation task.
+    #[error("task join error: {0}")]
+    TaskJoin(#[from] tokio::task::JoinError),
 }
 
 /// Options for the Kubernetes client.
 #[derive(Clone)]
 pub struct ClientOptions {
-    /// Cluster to use instead of the one set in context.
     pub cluster: Option<String>,
-
-    /// User to use instead of the one set in context.
     pub user: Option<String>,
-
-    /// User to impersonate.
     pub as_user: Option<String>,
-
-    /// Groups to impersonate.
     pub as_groups: Option<Vec<String>>,
 
-    /// Allow insecure connections (do not verify TLS certificate).
+    pub client_cert: Option<String>,
+    pub client_key: Option<String>,
+    pub certificate_authority: Option<String>,
     pub allow_insecure: bool,
 }
 
@@ -71,6 +70,9 @@ impl ClientOptions {
             user: None,
             as_user: None,
             as_groups: None,
+            client_cert: None,
+            client_key: None,
+            certificate_authority: None,
             allow_insecure,
         }
     }
@@ -274,14 +276,17 @@ async fn get_client_for_context(kubeconfig: Kubeconfig, context: &str, options: 
     let mut config = Config::from_custom_kubeconfig(kubeconfig, &kubeconfig_options).await?;
     config.auth_info.impersonate = options.as_user;
     config.auth_info.impersonate_groups = options.as_groups;
+    config.auth_info.client_certificate = options.client_cert;
+    config.auth_info.client_key = options.client_key;
     config.accept_invalid_certs = options.allow_insecure;
+    config.root_cert_file = options.certificate_authority.as_ref().map(PathBuf::from);
 
     let fixed_url = config.cluster_url.to_string().replace("0.0.0.0", "127.0.0.1");
     if let Ok(uri) = Uri::from_str(&fixed_url) {
         config.cluster_url = uri;
     }
 
-    Ok(Client::try_from(config)?)
+    Ok(tokio::task::spawn_blocking(move || Client::try_from(config)).await??)
 }
 
 /// Returns provided context (or default one if `None` specified).

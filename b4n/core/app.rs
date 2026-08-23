@@ -16,10 +16,8 @@ use std::net::{IpAddr, SocketAddr};
 use std::rc::Rc;
 use tokio::runtime::Handle;
 
-use crate::cli::Args;
-use crate::core::{
-    AppData, BgWorker, BgWorkerError, KubernetesClientManager, SharedAppData, SharedAppDataExt, SharedBgWorker, ViewsManager,
-};
+use crate::core::managers::{KubernetesClientManager, ViewsManager};
+use crate::core::{AppData, BgWorker, BgWorkerError, SharedAppData, SharedAppDataExt, SharedBgWorker};
 use crate::ui::views::ResourcesView;
 
 /// Application execution flow.
@@ -51,7 +49,7 @@ pub struct App {
 
 impl App {
     /// Creates new [`App`] instance.
-    pub fn new(runtime: Handle, config: Config, history: History, theme: Theme, args: &Args) -> Result<Self> {
+    pub fn new(runtime: Handle, config: Config, history: History, theme: Theme, options: ClientOptions) -> Result<Self> {
         let is_mouse_enabled = config.mouse;
         let theme_path = config.theme_path();
         let syntax_data = SyntaxData::new(&theme);
@@ -63,13 +61,6 @@ impl App {
             syntax_data,
         )));
         let resources = ResourcesView::new(Rc::clone(&data), Rc::clone(&worker), footer.get_transmitter());
-        let options = ClientOptions {
-            cluster: args.cluster.clone(),
-            user: args.user.clone(),
-            as_user: args.as_user.clone(),
-            as_groups: (!args.as_group.is_empty()).then(|| args.as_group.clone()),
-            allow_insecure: args.insecure,
-        };
         let client_manager =
             KubernetesClientManager::new(Rc::clone(&data), Rc::clone(&worker), footer.get_transmitter(), options);
         let mut views_manager = ViewsManager::new(Rc::clone(&data), Rc::clone(&worker), resources, footer);
