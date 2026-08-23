@@ -38,7 +38,7 @@ pub struct Args {
     pub as_user: Option<String>,
 
     /// Group to impersonate during the session.
-    #[arg(long)]
+    #[arg(long, requires = "as_user")]
     pub as_group: Vec<String>,
 
     /// Skip TLS certificate verification (unsafe).
