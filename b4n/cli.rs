@@ -13,11 +13,11 @@ pub struct Args {
     #[arg(long, short)]
     pub namespace: Option<String>,
 
-    /// Start with cluster-wide view (all namespaces).
+    /// Show resources across all namespaces.
     #[arg(long, short = 'A')]
     pub all_namespaces: bool,
 
-    /// Path to the kubeconfig file (defaults to $HOME/.kube/config).
+    /// Path to the kubeconfig file (defaults to $KUBECONFIG or ~/.kube/config).
     #[arg(long, env = "KUBECONFIG")]
     pub kube_config: Option<String>,
 
@@ -33,7 +33,15 @@ pub struct Args {
     #[arg(long)]
     pub user: Option<String>,
 
-    /// Skip TLS certificate verification (insecure).
+    /// Username to impersonate during the session.
+    #[arg(long = "as")]
+    pub as_user: Option<String>,
+
+    /// Group to impersonate during the session.
+    #[arg(long)]
+    pub as_group: Vec<String>,
+
+    /// Skip TLS certificate verification (unsafe).
     #[arg(long)]
     pub insecure: bool,
 
@@ -46,7 +54,8 @@ impl Args {
     /// Returns context or `last_used` if context is `None` and cluster or user is not provided.
     pub fn context<'a>(&'a self, last_used: Option<&'a str>) -> Option<&'a str> {
         self.context.as_deref().or_else(|| {
-            let allow_last_used = self.cluster.is_none() && self.user.is_none();
+            let allow_last_used =
+                self.cluster.is_none() && self.user.is_none() && self.as_user.is_none() && self.as_group.is_empty();
             if allow_last_used { last_used } else { None }
         })
     }

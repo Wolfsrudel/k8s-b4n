@@ -5,6 +5,7 @@
 ### Features
 
 - add `--cluster` and `--user` options to overwrite context configuration
+- allow to impersonate as a different user during the session
 
 ### Bug fixes
 

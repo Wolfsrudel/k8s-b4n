@@ -64,8 +64,10 @@ impl App {
         )));
         let resources = ResourcesView::new(Rc::clone(&data), Rc::clone(&worker), footer.get_transmitter());
         let options = ClientOptions {
-            cluster: args.cluster.as_deref().map(String::from),
-            user: args.user.as_deref().map(String::from),
+            cluster: args.cluster.clone(),
+            user: args.user.clone(),
+            as_user: args.as_user.clone(),
+            as_groups: (!args.as_group.is_empty()).then(|| args.as_group.clone()),
             allow_insecure: args.insecure,
         };
         let client_manager =

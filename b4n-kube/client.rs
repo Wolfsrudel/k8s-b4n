@@ -51,8 +51,14 @@ pub struct ClientOptions {
     /// Cluster to use instead of the one set in context.
     pub cluster: Option<String>,
 
-    /// User to use instead of the one set in context
+    /// User to use instead of the one set in context.
     pub user: Option<String>,
+
+    /// User to impersonate.
+    pub as_user: Option<String>,
+
+    /// Groups to impersonate.
+    pub as_groups: Option<Vec<String>>,
 
     /// Allow insecure connections (do not verify TLS certificate).
     pub allow_insecure: bool,
@@ -63,6 +69,8 @@ impl ClientOptions {
         Self {
             cluster: None,
             user: None,
+            as_user: None,
+            as_groups: None,
             allow_insecure,
         }
     }
@@ -264,6 +272,8 @@ async fn get_client_for_context(kubeconfig: Kubeconfig, context: &str, options: 
     };
 
     let mut config = Config::from_custom_kubeconfig(kubeconfig, &kubeconfig_options).await?;
+    config.auth_info.impersonate = options.as_user;
+    config.auth_info.impersonate_groups = options.as_groups;
     config.accept_invalid_certs = options.allow_insecure;
 
     let fixed_url = config.cluster_url.to_string().replace("0.0.0.0", "127.0.0.1");
