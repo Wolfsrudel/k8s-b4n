@@ -42,18 +42,18 @@ pub struct Args {
     pub as_group: Vec<String>,
 
     /// Path to a client certificate file for TLS authentication.
-    #[arg(long)]
+    #[arg(long, requires = "client_key")]
     pub client_cert: Option<String>,
 
     /// Path to a client key file for TLS authentication.
-    #[arg(long)]
+    #[arg(long, requires = "client_cert")]
     pub client_key: Option<String>,
 
-    /// Path to a cert file with the certificate authority to use.
+    /// Path to a CA file for server TLS verification.
     #[arg(long = "ca")]
     pub certificate_authority: Option<String>,
 
-    /// Skip TLS certificate verification (unsafe).
+    /// Skip server TLS certificate verification (unsafe).
     #[arg(long)]
     pub insecure: bool,
 

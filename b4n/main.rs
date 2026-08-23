@@ -1,7 +1,7 @@
 use anyhow::Result;
 use b4n_config::{Config, ConfigError, History};
 use b4n_kube::PODS;
-use b4n_kube::client::{resolve_kubeconfig_path, validate_and_resolve_context};
+use b4n_kube::client::{resolve_kubeconfig_path, validate_and_resolve_context, validate_certificate_paths};
 use clap::Parser;
 use core::{App, ExecutionFlow};
 use std::thread::sleep;
@@ -52,6 +52,12 @@ fn run_application(args: &cli::Args) -> Result<()> {
         args.context.is_none(),
     ))?;
     history.set_kubeconfig_path(kubeconfig_path);
+
+    validate_certificate_paths(&[
+        args.client_cert.as_deref(),
+        args.client_key.as_deref(),
+        args.certificate_authority.as_deref(),
+    ])?;
 
     let kind = args.kind(history.get_kind(&context.name)).unwrap_or(PODS).into();
     let namespace = history.get_namespace(&context.name).or(context.namespace.as_deref());

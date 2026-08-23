@@ -32,6 +32,10 @@ pub enum ClientError {
     #[error("Kube user '{0}' not found in configuration.")]
     UserNotFound(String),
 
+    /// Certificate file not found.
+    #[error("Certificate path '{0}' not found.")]
+    CertificateNotFound(String),
+
     /// Failed to read kube configuration.
     #[error("cannot read kubeconfig: {0}")]
     IoError(#[from] std::io::Error),
@@ -45,7 +49,7 @@ pub enum ClientError {
     KubeError(#[from] kube::Error),
 
     /// Cannot join client creation task.
-    #[error("task join error: {0}")]
+    #[error("create client task join error: {0}")]
     TaskJoin(#[from] tokio::task::JoinError),
 }
 
@@ -190,6 +194,16 @@ pub fn resolve_kubeconfig_path(kubeconfig_path: Option<&str>) -> Result<PathBuf,
     }
 
     Ok(path::absolute(path)?)
+}
+
+/// Validates all provided certificate paths if they exists.
+pub fn validate_certificate_paths(paths: &[Option<&str>]) -> Result<(), ClientError> {
+    paths
+        .iter()
+        .flatten()
+        .map(std::path::Path::new)
+        .filter(|path| !path.exists() || !path.is_file())
+        .try_for_each(|path| Err(ClientError::CertificateNotFound(path.display().to_string())))
 }
 
 /// Validates provided configuration and returns matching context from the kubeconfig.\
