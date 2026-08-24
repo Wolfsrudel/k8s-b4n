@@ -40,7 +40,7 @@ pub fn get_left_breadcrumbs<'a>(
 
     let mut path = vec![
         Span::styled("", Style::new().fg(context.bg).bg(app_data.theme.colors.text.bg)),
-        Span::styled(format!(" {} ", data.context), &context),
+        Span::styled(get_context_display(app_data), &context),
     ];
 
     let namespace = namespace.unwrap_or_else(|| get_breadcrumbs_namespace(scope, data, kind));
@@ -101,6 +101,28 @@ fn get_context_color(app_data: &AppData) -> TextColors {
         .as_ref()
         .and_then(|contexts| contexts.get(&app_data.current.context))
         .map_or(app_data.theme.colors.header.context, |f| *f)
+}
+
+fn get_context_display(app_data: &AppData) -> String {
+    let mut result = String::with_capacity(app_data.current.context.len() + 5);
+    result.push(' ');
+    result.push_str(&app_data.current.context);
+    result.push(' ');
+
+    let mut has_custom = false;
+    if app_data.client_info.is_custom_cluster || app_data.client_info.is_custom_user {
+        result.push('');
+        has_custom = true;
+    }
+    if app_data.client_info.is_impersonated {
+        result.push('󰗹');
+        has_custom = true;
+    }
+    if has_custom {
+        result.push(' ');
+    }
+
+    result
 }
 
 #[derive(Default)]

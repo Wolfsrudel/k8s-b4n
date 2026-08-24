@@ -26,6 +26,11 @@ impl RequestInfo {
     pub fn is_overdue(&self) -> bool {
         self.request_id.is_none() && self.request_time.elapsed().as_secs() > 30
     }
+
+    /// Returns `true` if options for this request have overrides.
+    pub fn has_overrides(&self) -> bool {
+        self.options.has_overrides()
+    }
 }
 
 /// Kubernetes client manager.
@@ -109,8 +114,8 @@ impl KubernetesClientManager {
         if self.request_match(command_id) {
             match result {
                 Ok(result) => {
-                    self.request = None;
-                    let msg = format!("Connected to '{}'", result.client.context());
+                    let request = self.request.take();
+                    let msg = get_connected_message(request.as_ref(), result.client.context());
                     self.footer_tx.show_info(msg, DEFAULT_MESSAGE_DURATION);
                     Some(result)
                 },
@@ -174,5 +179,15 @@ impl KubernetesClientManager {
             kind,
             namespace,
         }
+    }
+}
+
+fn get_connected_message(request: Option<&RequestInfo>, context: &str) -> String {
+    if let Some(request) = request
+        && request.has_overrides()
+    {
+        format!("Connected to '{}' ({})", context, request.options)
+    } else {
+        format!("Connected to '{context}'")
     }
 }

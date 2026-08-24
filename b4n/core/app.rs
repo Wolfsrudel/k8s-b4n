@@ -450,6 +450,7 @@ impl App {
             let resource = ResourceRef::new(result.kind.clone(), result.namespace.clone());
 
             let scope = self.worker.borrow_mut().start(result.client, result.discovery, resource);
+            self.data.borrow_mut().client_info = result.client_info;
             if let Ok(scope) = scope {
                 self.views_manager
                     .process_context_change(context, result.namespace.clone(), version, scope.clone());

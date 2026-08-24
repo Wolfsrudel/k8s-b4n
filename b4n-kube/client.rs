@@ -68,6 +68,7 @@ pub struct ClientOptions {
 }
 
 impl ClientOptions {
+    /// Creates new [`ClientOptions`] instance.
     pub fn new(allow_insecure: bool) -> Self {
         Self {
             cluster: None,
@@ -79,6 +80,48 @@ impl ClientOptions {
             certificate_authority: None,
             allow_insecure,
         }
+    }
+
+    /// Returns `true` if options have overrides for cluster, user or impersonation.
+    pub fn has_overrides(&self) -> bool {
+        self.cluster.is_some()
+            || self.user.is_some()
+            || self.as_user.is_some()
+            || self.as_groups.as_ref().is_some_and(|g| !g.is_empty())
+    }
+}
+
+impl std::fmt::Display for ClientOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut sep = "";
+
+        if let Some(cluster) = &self.cluster {
+            write!(f, "cluster: {cluster}")?;
+            sep = ", ";
+        }
+
+        if let Some(user) = &self.user {
+            write!(f, "{sep}user: {user}")?;
+            sep = ", ";
+        }
+
+        if let Some(as_user) = &self.as_user {
+            write!(f, "{sep}as: {as_user}")?;
+            sep = ", ";
+        }
+
+        if let Some(as_groups) = &self.as_groups
+            && !as_groups.is_empty()
+        {
+            write!(f, "{sep}as-groups: ")?;
+            sep = "";
+            for group in as_groups {
+                write!(f, "{sep}{group}")?;
+                sep = ", ";
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -99,16 +142,9 @@ impl From<&NamedContext> for ContextInfo {
 
 /// Wrapper for the kubernetes [`Client`].
 pub struct KubernetesClient {
-    /// Kubernetes client.
     client: Client,
-
-    /// Kubeconfig path.
     kubeconfig_path: Option<String>,
-
-    /// Context used by the kubernetes client.
     context: String,
-
-    /// Kubernetes API version that the client is connected to.
     k8s_version: String,
 }
 

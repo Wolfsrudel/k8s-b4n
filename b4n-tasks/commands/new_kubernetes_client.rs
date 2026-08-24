@@ -23,9 +23,18 @@ pub enum KubernetesClientError {
     NamespaceFetchFailure,
 }
 
+/// Additional kubernetes client info.
+#[derive(Default)]
+pub struct KubernetesClientInfo {
+    pub is_custom_cluster: bool,
+    pub is_custom_user: bool,
+    pub is_impersonated: bool,
+}
+
 /// Result for the [`NewKubernetesClientCommand`].
 pub struct KubernetesClientResult {
     pub client: KubernetesClient,
+    pub client_info: KubernetesClientInfo,
     pub kind: Kind,
     pub namespace: Namespace,
     pub discovery: DiscoveryList,
@@ -60,6 +69,10 @@ impl NewKubernetesClientCommand {
 
     /// Creates new kubernetes client and returns it.
     pub async fn execute(self) -> Option<CommandResult> {
+        let is_impersonated = self.options.as_user.is_some();
+        let is_custom_cluster = self.options.cluster.is_some();
+        let is_custom_user = self.options.user.is_some();
+
         let client = KubernetesClient::new(self.kubeconfig_path.as_deref(), Some(&self.context), self.options).await;
         let client = match client {
             Ok(client) => client,
@@ -111,6 +124,11 @@ impl NewKubernetesClientCommand {
             kind,
             namespace,
             discovery,
+            client_info: KubernetesClientInfo {
+                is_custom_cluster,
+                is_custom_user,
+                is_impersonated,
+            },
         })))
     }
 }
