@@ -3,15 +3,15 @@ use tracing::error;
 
 use crate::commands::CommandResult;
 
-/// Command that reads kube config file and lists all contexts from it.
+/// Command that reads kubeconfig file and lists all contexts from it.
 pub struct ListKubeContextsCommand {
-    pub kube_config_path: Option<String>,
+    pub kubeconfig_path: Option<String>,
 }
 
 impl ListKubeContextsCommand {
-    /// Gets all contexts from the kube config file.
+    /// Gets all contexts from the kubeconfig file.
     pub async fn execute(&self) -> Option<CommandResult> {
-        match list_contexts(self.kube_config_path.as_deref()).await {
+        match list_contexts(self.kubeconfig_path.as_deref()).await {
             Ok(contexts) => Some(CommandResult::ContextsList(contexts)),
             Err(error) => {
                 error!("Cannot read contexts list: {}", error);

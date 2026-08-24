@@ -3,6 +3,7 @@ use b4n_common::{DEFAULT_ERROR_DURATION, DEFAULT_MESSAGE_DURATION, IconKind};
 use b4n_config::keys::{KeyBindings, KeyCommand};
 use b4n_config::themes::Theme;
 use b4n_config::{Config, ConfigError, ConfigWatcher, History, PluginsWatcher, SyntaxData};
+use b4n_kube::client::ClientOptions;
 use b4n_kube::{Kind, NAMESPACES, Namespace, ResourceRef};
 use b4n_tasks::commands::{
     Command, CommandResult, KubernetesClientError, KubernetesClientResult, ListKubeContextsCommand, ListThemesCommand,
@@ -15,9 +16,8 @@ use std::net::{IpAddr, SocketAddr};
 use std::rc::Rc;
 use tokio::runtime::Handle;
 
-use crate::core::{
-    AppData, BgWorker, BgWorkerError, KubernetesClientManager, SharedAppData, SharedAppDataExt, SharedBgWorker, ViewsManager,
-};
+use crate::core::managers::{KubernetesClientManager, ViewsManager};
+use crate::core::{AppData, BgWorker, BgWorkerError, SharedAppData, SharedAppDataExt, SharedBgWorker};
 use crate::ui::views::ResourcesView;
 
 /// Application execution flow.
@@ -49,7 +49,7 @@ pub struct App {
 
 impl App {
     /// Creates new [`App`] instance.
-    pub fn new(runtime: Handle, config: Config, history: History, theme: Theme, allow_insecure: bool) -> Result<Self> {
+    pub fn new(runtime: Handle, config: Config, history: History, theme: Theme, options: ClientOptions) -> Result<Self> {
         let is_mouse_enabled = config.mouse;
         let theme_path = config.theme_path();
         let syntax_data = SyntaxData::new(&theme);
@@ -62,7 +62,7 @@ impl App {
         )));
         let resources = ResourcesView::new(Rc::clone(&data), Rc::clone(&worker), footer.get_transmitter());
         let client_manager =
-            KubernetesClientManager::new(Rc::clone(&data), Rc::clone(&worker), footer.get_transmitter(), allow_insecure);
+            KubernetesClientManager::new(Rc::clone(&data), Rc::clone(&worker), footer.get_transmitter(), options);
         let mut views_manager = ViewsManager::new(Rc::clone(&data), Rc::clone(&worker), resources, footer);
         views_manager.set_message_history_hint();
 
@@ -159,7 +159,7 @@ impl App {
             {
                 let theme = &self.data.borrow().config.theme;
                 self.show_theme_error(format!("Error loading '{theme}' theme: {error}"));
-            }
+            },
             _ => (),
         }
 
@@ -431,10 +431,10 @@ impl App {
 
     /// Runs command to list kube contexts from the current config.
     fn list_kube_contexts(&mut self) {
-        let kube_config_path = self.data.borrow().history.kube_config_path().map(String::from);
+        let kubeconfig_path = self.data.borrow().history.kubeconfig_path().map(String::from);
         self.worker
             .borrow_mut()
-            .run_command(Command::ListKubeContexts(ListKubeContextsCommand { kube_config_path }));
+            .run_command(Command::ListKubeContexts(ListKubeContextsCommand { kubeconfig_path }));
     }
 
     /// Runs command to list themes from the themes directory.
@@ -450,6 +450,7 @@ impl App {
             let resource = ResourceRef::new(result.kind.clone(), result.namespace.clone());
 
             let scope = self.worker.borrow_mut().start(result.client, result.discovery, resource);
+            self.data.borrow_mut().client_info = result.client_info;
             if let Ok(scope) = scope {
                 self.views_manager
                     .process_context_change(context, result.namespace.clone(), version, scope.clone());

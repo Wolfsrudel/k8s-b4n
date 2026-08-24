@@ -1,7 +1,7 @@
 use anyhow::Result;
 use b4n_config::{Config, ConfigError, History};
 use b4n_kube::PODS;
-use b4n_kube::client::{get_context, resolve_kube_config_path};
+use b4n_kube::client::{resolve_kubeconfig_path, validate_and_resolve_context, validate_certificate_paths};
 use clap::Parser;
 use core::{App, ExecutionFlow};
 use std::thread::sleep;
@@ -18,7 +18,7 @@ fn main() -> Result<()> {
     let args = cli::Args::parse();
     if args.show_dirs {
         Config::init_dirs(false)?;
-        Config::print_dirs(resolve_kube_config_path(args.kube_config.as_deref()).ok());
+        Config::print_dirs(resolve_kubeconfig_path(args.kube_config.as_deref()).ok());
         return Ok(());
     }
 
@@ -44,18 +44,20 @@ fn run_application(args: &cli::Args) -> Result<()> {
     let rt = Builder::new_multi_thread().enable_all().build()?;
 
     let mut history = rt.block_on(History::load_or_create())?;
-    let (context, kube_config_path) = rt.block_on(get_context(
+    let (context, kubeconfig_path) = rt.block_on(validate_and_resolve_context(
         args.kube_config.as_deref(),
         args.context(history.current_context()),
+        args.cluster.as_deref(),
+        args.user.as_deref(),
         args.context.is_none(),
     ))?;
-    let Some(context) = context else {
-        return Err(anyhow::anyhow!(format!(
-            "Kube context '{}' not found in configuration.",
-            args.context(history.current_context()).unwrap_or("default")
-        )));
-    };
-    history.set_kube_config_path(kube_config_path);
+    history.set_kubeconfig_path(kubeconfig_path);
+
+    validate_certificate_paths(&[
+        args.client_cert.as_deref(),
+        args.client_key.as_deref(),
+        args.certificate_authority.as_deref(),
+    ])?;
 
     let kind = args.kind(history.get_kind(&context.name)).unwrap_or(PODS).into();
     let namespace = history.get_namespace(&context.name).or(context.namespace.as_deref());
@@ -64,7 +66,7 @@ fn run_application(args: &cli::Args) -> Result<()> {
     let (config, config_error) = rt.block_on(Config::load_or_create());
     let (theme, theme_error) = rt.block_on(config.load_theme());
 
-    let mut app = App::new(rt.handle().clone(), config, history, theme, args.insecure)?;
+    let mut app = App::new(rt.handle().clone(), config, history, theme, args.into())?;
     app.start(context.name, kind, namespace)?;
 
     if let Some(error) = config_error

@@ -23,9 +23,18 @@ pub enum KubernetesClientError {
     NamespaceFetchFailure,
 }
 
+/// Additional kubernetes client info.
+#[derive(Default)]
+pub struct KubernetesClientInfo {
+    pub is_custom_cluster: bool,
+    pub is_custom_user: bool,
+    pub is_impersonated: bool,
+}
+
 /// Result for the [`NewKubernetesClientCommand`].
 pub struct KubernetesClientResult {
     pub client: KubernetesClient,
+    pub client_info: KubernetesClientInfo,
     pub kind: Kind,
     pub namespace: Namespace,
     pub discovery: DiscoveryList,
@@ -33,42 +42,38 @@ pub struct KubernetesClientResult {
 
 /// Command that creates new kubernetes client.
 pub struct NewKubernetesClientCommand {
-    pub kube_config_path: Option<String>,
+    pub kubeconfig_path: Option<String>,
     pub context: String,
+    pub options: ClientOptions,
     pub kind: Kind,
     pub namespace: Namespace,
-    pub allow_insecure: bool,
 }
 
 impl NewKubernetesClientCommand {
     /// Creates new [`NewKubernetesClientCommand`] instance.
     pub fn new(
-        kube_config_path: Option<String>,
+        kubeconfig_path: Option<String>,
         context: String,
+        options: ClientOptions,
         kind: Kind,
         namespace: Namespace,
-        allow_insecure: bool,
     ) -> Self {
         Self {
-            kube_config_path,
+            kubeconfig_path,
             context,
+            options,
             kind,
             namespace,
-            allow_insecure,
         }
     }
 
     /// Creates new kubernetes client and returns it.
     pub async fn execute(self) -> Option<CommandResult> {
-        let client = KubernetesClient::new(
-            self.kube_config_path.as_deref(),
-            Some(&self.context),
-            ClientOptions {
-                fallback_to_default: false,
-                allow_insecure: self.allow_insecure,
-            },
-        )
-        .await;
+        let is_impersonated = self.options.as_user.is_some();
+        let is_custom_cluster = self.options.cluster.is_some();
+        let is_custom_user = self.options.user.is_some();
+
+        let client = KubernetesClient::new(self.kubeconfig_path.as_deref(), Some(&self.context), self.options).await;
         let client = match client {
             Ok(client) => client,
             Err(err) => return Some(CommandResult::KubernetesClient(Err(err.into()))),
@@ -119,6 +124,11 @@ impl NewKubernetesClientCommand {
             kind,
             namespace,
             discovery,
+            client_info: KubernetesClientInfo {
+                is_custom_cluster,
+                is_custom_user,
+                is_impersonated,
+            },
         })))
     }
 }

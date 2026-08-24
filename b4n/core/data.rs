@@ -4,6 +4,7 @@ use b4n_config::keys::{KeyBindings, KeyCombination, KeyCommand};
 use b4n_config::{Config, History, themes::Theme};
 use b4n_config::{PluginInput, PluginRef, Plugins};
 use b4n_kube::{CONTAINERS, InitData, Kind, Namespace, ResourceRef};
+use b4n_tasks::commands::KubernetesClientInfo;
 use b4n_tui::widgets::SharedClipboard;
 use b4n_tui::{ToSelectData, TuiEvent};
 use kube::discovery::Scope;
@@ -150,6 +151,8 @@ pub struct AppData {
     pub is_pinned: bool,
 
     pub is_mouse_enabled: bool,
+
+    pub client_info: KubernetesClientInfo,
 
     /// Holds all discovered kinds.
     pub kinds: Option<Vec<KindItem>>,

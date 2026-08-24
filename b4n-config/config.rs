@@ -174,14 +174,14 @@ impl Config {
     }
 
     /// Prints configuration paths used by the application.
-    pub fn print_dirs(kube_config: Option<PathBuf>) {
+    pub fn print_dirs(kubeconfig: Option<PathBuf>) {
         println!("{}:     {}", "config".cyan(), Self::config_path().display());
         println!("{}:    {}", "history".cyan(), History::default_path().display());
         println!("{}:       {}", "logs".cyan(), Self::data_dir().join("logs").display());
         println!("{}:     {}", "themes".cyan(), Self::themes_dir().display());
         println!("{}:    {}", "plugins".cyan(), Self::plugins_dir().display());
-        if let Some(kube_config) = kube_config {
-            println!("{}: {}", "kubeconfig".cyan(), kube_config.display());
+        if let Some(kubeconfig) = kubeconfig {
+            println!("{}: {}", "kubeconfig".cyan(), kubeconfig.display());
         } else {
             println!("{}: {}", "kubeconfig".cyan(), "not found".grey());
         }
